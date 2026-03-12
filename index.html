@@ -1353,31 +1353,33 @@ window.addEventListener('load', async () => {
     document.getElementById('authScreen').classList.remove('h');
   }, 8000);
 
-  _sb.auth.onAuthStateChange(async (event, session) => {
+  // Vérification directe de session — plus fiable que onAuthStateChange sur Safari iOS
+  try {
+    const { data:{ session }, error } = await _sb.auth.getSession();
     clearTimeout(authTimeout);
     document.getElementById('loadingScreen').classList.add('h');
+    if(error) throw error;
     if(session?.user){
       await launchApp(session.user);
     } else {
-      _currentUser = null;
       showLogin();
-    }
-  });
-
-  try {
-    const { data:{ session }, error } = await _sb.auth.getSession();
-    if(error) throw error;
-    if(!session){
-      clearTimeout(authTimeout);
-      document.getElementById('loadingScreen').classList.add('h');
-      document.getElementById('authScreen').classList.remove('h');
     }
   } catch(e){
     console.error('getSession error', e);
     clearTimeout(authTimeout);
     document.getElementById('loadingScreen').classList.add('h');
-    document.getElementById('authScreen').classList.remove('h');
+    showLogin();
   }
+
+  // onAuthStateChange en backup (logout, token refresh)
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    if(event === 'SIGNED_OUT'){
+      _currentUser = null;
+      showLogin();
+    } else if(event === 'TOKEN_REFRESHED' && session?.user){
+      _currentUser = session.user;
+    }
+  });
 });
 </script>
 </body>
