@@ -752,7 +752,8 @@ async function loadFromSupabase(){
   } catch(err){
     console.error('loadFromSupabase error', err);
     setSyncState('err');
-    DATA.poids = []; DATA.seances = [];
+    toast('⚠️ ' + (err.message || JSON.stringify(err)));
+    // Ne pas vider DATA — on garde les données en mémoire
   }
 }
 
@@ -1327,6 +1328,20 @@ async function launchApp(user){
   renderPlanning();
   renderJournal();
 }
+
+// Sync au retour au premier plan iOS
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState === 'visible' && _currentUser){
+    try { await loadFromSupabase(); } catch(e){}
+    renderPlanning(); renderJournal();
+  }
+});
+window.addEventListener('pageshow', async (e) => {
+  if(e.persisted && _currentUser){
+    try { await loadFromSupabase(); } catch(e){}
+    renderPlanning(); renderJournal();
+  }
+});
 
 window.addEventListener('load', async () => {
   applyTheme(_theme);
