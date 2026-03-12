@@ -1321,10 +1321,11 @@ function showLogin(){
 }
 
 async function launchApp(user){
+  const firstLaunch = !_currentUser;
   _currentUser = user;
   updateUserUI(_currentUser);
   try { await loadFromSupabase(); } catch(e){ console.error('load error', e); }
-  showApp();
+  if(firstLaunch) showApp();
   renderPlanning();
   renderJournal();
 }
@@ -1356,7 +1357,7 @@ window.addEventListener('load', async () => {
     clearTimeout(authTimeout);
     document.getElementById('loadingScreen').classList.add('h');
     if(session?.user){
-      if(!_currentUser) await launchApp(session.user);
+      await launchApp(session.user);
     } else {
       _currentUser = null;
       showLogin();
