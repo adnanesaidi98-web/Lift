@@ -1319,11 +1319,7 @@ function showLogin(){
   document.getElementById('authScreen').classList.remove('h');
 }
 
-let _appStarted = false;
-
 async function launchApp(user){
-  if(_appStarted) return;
-  _appStarted = true;
   _currentUser = user;
   updateUserUI(_currentUser);
   try { await loadFromSupabase(); } catch(e){ console.error('load error', e); }
@@ -1332,35 +1328,21 @@ async function launchApp(user){
   renderJournal();
 }
 
-// Rechargement quand l'app revient au premier plan (iOS PWA)
-async function refreshIfNeeded(){
-  if(!_appStarted || !_currentUser) return;
-  try { await loadFromSupabase(); } catch(e){ console.error('refresh error', e); }
-  renderPlanning();
-  renderJournal();
-}
-document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') refreshIfNeeded(); });
-window.addEventListener('focus', refreshIfNeeded);
-window.addEventListener('pageshow', (e) => { if(e.persisted) refreshIfNeeded(); });
-
 window.addEventListener('load', async () => {
   applyTheme(_theme);
   tDisplay(); tRing();
 
   const authTimeout = setTimeout(() => {
-    if(!_appStarted){
-      document.getElementById('loadingScreen').classList.add('h');
-      document.getElementById('authScreen').classList.remove('h');
-    }
+    document.getElementById('loadingScreen').classList.add('h');
+    document.getElementById('authScreen').classList.remove('h');
   }, 8000);
 
   _sb.auth.onAuthStateChange(async (event, session) => {
     clearTimeout(authTimeout);
     document.getElementById('loadingScreen').classList.add('h');
     if(session?.user){
-      await launchApp(session.user);
+      if(!_currentUser) await launchApp(session.user);
     } else {
-      _appStarted = false;
       _currentUser = null;
       showLogin();
     }
